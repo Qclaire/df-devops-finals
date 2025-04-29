@@ -1,0 +1,86 @@
+# docker.yml
+---
+- name: Install and configure Docker
+  hosts: all
+  become: true
+  vars_files:
+      - vars/common.yml
+
+  tasks:
+      - name: Install required packages
+        yum:
+            name:
+                - yum-utils
+                - device-mapper-persistent-data
+                - lvm2
+            state: present
+        when: ansible_os_family == 'RedHat'
+
+      - name: Add Docker repository
+        command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+        args:
+            creates: /etc/yum.repos.d/docker-ce.repo
+        when: ansible_os_family == 'RedHat'
+
+      - name: Install Docker CE
+        yum:
+            name:
+                - docker-ce
+                - docker-ce-cli
+                - containerd.io
+            state: present
+        when: ansible_os_family == 'RedHat'
+
+      - name: Create Docker configuration directory
+        file:
+            path: /etc/docker
+            state: directory
+            mode: "0755"
+
+      - name: Configure Docker daemon (with insecure registries if provided)
+        copy:
+            content: |
+                {
+                  "exec-opts": ["native.cgroupdriver=systemd"],
+                  "log-driver": "json-file",
+                  "log-opts": {
+                    "max-size": "100m"
+                  },
+                  "storage-driver": "overlay2",
+                  "storage-opts": [
+                    "overlay2.override_kernel_check=true"
+                  ],
+                  {% if docker_insecure_registries is defined and docker_insecure_registries %}
+                  "insecure-registries": {{ docker_insecure_registries | to_json }}
+                  {% endif %}
+                }
+            dest: /etc/docker/daemon.json
+            mode: "0644"
+        notify: Restart Docker
+
+      - name: Create Docker service directory
+        file:
+            path: /etc/systemd/system/docker.service.d
+            state: directory
+            mode: "0755"
+
+      - name: Start and enable Docker service
+        systemd:
+            name: docker
+            state: started
+            enabled: yes
+            daemon_reload: yes
+
+      - name: Add users to the Docker group
+        user:
+            name: "{{ item.name }}"
+            groups: docker
+            append: yes
+        loop: "{{ system_users }}"
+        when: item.docker | default(false)
+
+  handlers:
+      - name: Restart Docker
+        systemd:
+            name: docker
+            state: restarted
