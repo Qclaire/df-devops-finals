@@ -2,12 +2,25 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
         AWS_DEFAULT_REGION = credentials('AWS_REGION')
         ECR_REGISTRY = credentials('ECR_REGISTRY')
     }
 
     stages {
+        stage('Generate Version') {
+            steps {
+                script {
+                    // Get the current date in the format yyyy.mm.dd
+                    def date = sh(script: "date +'%Y.%m.%d'", returnStdout: true).trim()
+                    // Use Jenkins build number as the build ID
+                    def buildId = env.BUILD_NUMBER
+                    // Generate the image tag
+                    env.IMAGE_TAG = "${date}.${buildId}"
+                    echo "Image tag: ${env.IMAGE_TAG}"
+                }
+            }
+        }
+
         stage('Login to ECR') {
             steps {
                 withCredentials([[
