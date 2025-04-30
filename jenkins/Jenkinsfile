@@ -74,6 +74,17 @@ pipeline {
             }
         }
 
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    deployToEKS('go-service', env.IMAGE_TAG)
+                    deployToEKS('python-service', env.IMAGE_TAG)
+                    deployToEKS('rail-service', env.IMAGE_TAG)
+                }
+            }
+        }
+
+
         stage('Terraform Apply') {
             // when {
             //     changeset "**/infrastructure/terraform/**"

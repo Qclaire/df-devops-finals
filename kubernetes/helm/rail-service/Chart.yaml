@@ -1,0 +1,4 @@
+apiVersion: v2
+name: rail-service
+description: Helm chart for Rail service
+version: 0.1.0

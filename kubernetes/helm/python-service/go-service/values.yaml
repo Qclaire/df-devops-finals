@@ -1,0 +1,14 @@
+replicaCount: 1
+
+image:
+    repository: 149536461874.dkr.ecr.eu-west-1.amazonaws.com/tech4dev-microservices/go-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+service:
+    type: ClusterIP
+    port: 8080
+
+env:
+    GO_SERVICE_HOST: go-service
+    GO_SERVICE_PORT: "8080"

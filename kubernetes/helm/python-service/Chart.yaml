@@ -1,0 +1,4 @@
+apiVersion: v2
+name: python-service
+description: Helm chart for Python service
+version: 0.1.0
