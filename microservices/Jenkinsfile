@@ -61,7 +61,7 @@ pipeline {
             steps {
                 dir('microservices/rail-service') {
                     script {
-                        def image = docker.build("${ECR_REGISTRY}/rail-service:${IMAGE_TAG}")
+                        def image = docker.build("${ECR_REGISTRY}/rails-service:${IMAGE_TAG}")
                         image.push()
                     }
                 }
