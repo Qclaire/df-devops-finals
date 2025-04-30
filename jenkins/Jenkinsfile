@@ -33,9 +33,9 @@ pipeline {
         }
 
         stage('Build & Push Go Service') {
-            when {
-                changeset "**/microservices/go-service/**"
-            }
+            // when {
+            //     changeset "**/microservices/go-service/**"
+            // }
             steps {
                 dir('microservices/go-service') {
                     script {
@@ -47,9 +47,9 @@ pipeline {
         }
 
         stage('Build & Push Python Service') {
-            when {
-                changeset "**/microservices/python-service/**"
-            }
+            // when {
+            //     changeset "**/microservices/python-service/**"
+            // }
             steps {
                 dir('microservices/python-service') {
                     script {
@@ -61,9 +61,9 @@ pipeline {
         }
 
         stage('Build & Push Rail Service') {
-            when {
-                changeset "**/microservices/rail-service/**"
-            }
+            // when {
+            //     changeset "**/microservices/rail-service/**"
+            // }
             steps {
                 dir('microservices/rail-service') {
                     script {
@@ -75,9 +75,9 @@ pipeline {
         }
 
         stage('Terraform Apply') {
-            when {
-                changeset "**/infrastructure/terraform/**"
-            }
+            // when {
+            //     changeset "**/infrastructure/terraform/**"
+            // }
             steps {
                 dir('infrastructure/terraform') {
                     withCredentials([[
