@@ -76,10 +76,10 @@ pipeline {
 
         stage('Terraform Apply') {
             when {
-                changeset "terraform/**"
+                changeset "**/infrastructure/terraform/**"
             }
             steps {
-                dir('terraform') {
+                dir('infrastructure/terraform') {
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
                         credentialsId: 'aws-keys'
