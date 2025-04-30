@@ -6,6 +6,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = credentials('AWS_REGION')
         ECR_REGISTRY = credentials('ECR_REGISTRY')
+        EKS_CLUSTER_NAME = credentials('EKS_CLUSTER_NAME')
     }
 
     stages {
@@ -77,9 +78,9 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    deployToEKS('go-service', env.IMAGE_TAG)
-                    deployToEKS('python-service', env.IMAGE_TAG)
-                    deployToEKS('rail-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'go-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'python-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'rail-service', env.IMAGE_TAG)
                 }
             }
         }
