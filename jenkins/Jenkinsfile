@@ -1,3 +1,4 @@
+@Library('shared-library') _
 
 pipeline {
     agent any
@@ -11,7 +12,7 @@ pipeline {
         stage('Init') {
             steps {
                 script {
-                    load 'vars/generateImageTag.groovy'
+                    
                     env.IMAGE_TAG = generateImageTag()
                 }
             }
