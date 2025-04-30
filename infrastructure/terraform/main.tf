@@ -23,7 +23,6 @@ terraform {
   }
 }
 
-
 provider "aws" {
   region = var.aws_region
 }
@@ -66,3 +65,5 @@ module "secrets" {
   project_name = var.project_name
   environment  = var.environment
 }
+
+# just to trigger the creation of the secrets
