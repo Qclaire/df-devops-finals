@@ -1,4 +1,0 @@
-apiVersion: v2
-name: go-service
-description: Helm chart for Go service
-version: 0.1.0
