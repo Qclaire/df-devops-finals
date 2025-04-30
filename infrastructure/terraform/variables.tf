@@ -3,7 +3,7 @@
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "microservices-app"
+  default     = "tech4dev-microservices-app"
 }
 
 variable "environment" {
@@ -57,17 +57,24 @@ variable "eks_node_instance_type" {
 variable "eks_node_desired_size" {
   description = "Desired number of worker nodes"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "eks_node_max_size" {
   description = "Maximum number of worker nodes"
   type        = number
-  default     = 4
+  default     = 1
 }
 
 variable "eks_node_min_size" {
   description = "Minimum number of worker nodes"
   type        = number
   default     = 1
+}
+
+# s3 bucket for storing Terraform state
+variable "s3_state_bucket_suffix" {
+  description = "Suffix for the S3 bucket name"
+  type        = string
+  default     = "tf-state"
 }

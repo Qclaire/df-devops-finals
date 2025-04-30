@@ -16,68 +16,19 @@ terraform {
     }
   }
 
-  
-
-#   backend "s3" {
-#     # for aws:
-#     # bucket         = "terraform-state-bucket"
-#     # key            = "microservices-app/terraform.tfstate"
-#     # region         = "us-east-1"
-#     # dynamodb_table = "terraform-lock"
-    
-#     # For local development with LocalStack:
-#     bucket                      = "terraform-state-bucket"
-#     key                         = "microservices-app/terraform.tfstate"
-#     region                      = "us-east-1"
-#     endpoint                    = "http://localhost:4566"
-#     skip_credentials_validation = true
-#     skip_metadata_api_check     = true
-#     force_path_style            = true
-#     dynamodb_table              = "terraform-lock"
-#     dynamodb_endpoint           = "http://localhost:4566"
-#   }
+  backend "s3" {
+    bucket = "tech4dev-microservices-app-prod-tf-state"
+    key    = "state/terraform.tfstate"
+    region = "eu-west-1" 
+  }
 }
 
-# # Provider configuration with conditional endpoint for LocalStack
+
 provider "aws" {
-   region = var.aws_region
-  
-  # Use these settings for LocalStack (local development)
-  dynamic "endpoints" {
-    for_each = var.use_localstack ? [1] : []
-    content {
-      apigateway     = "http://localhost:4566"
-      cloudformation = "http://localhost:4566"
-      cloudwatch     = "http://localhost:4566"
-      dynamodb       = "http://localhost:4566"
-      ec2            = "http://localhost:4566"
-      ecs            = "http://localhost:4566"
-      ecr            = "http://localhost:4566"
-      iam            = "http://localhost:4566"
-      lambda         = "http://localhost:4566"
-      route53        = "http://localhost:4566"
-      s3             = "http://localhost:4566"
-      secretsmanager = "http://localhost:4566"
-      ses            = "http://localhost:4566"
-      sns            = "http://localhost:4566"
-      sqs            = "http://localhost:4566"
-      ssm            = "http://localhost:4566"
-      stepfunctions  = "http://localhost:4566"
-      sts            = "http://localhost:4566"
-    }
+  region = var.aws_region
 }
-  
-  # For LocalStack
-  skip_credentials_validation = var.use_localstack
-  skip_metadata_api_check     = var.use_localstack
-  skip_requesting_account_id  = var.use_localstack
-  
-  # S3 force path for LocalStack compatibility
-  s3_use_path_style = var.use_localstack
-}
-
 module "networking" {
-  source = "./modules/networking"
+  source               = "./modules/networking"
   vpc_cidr             = var.vpc_cidr
   availability_zones   = var.availability_zones
   public_subnet_cidrs  = var.public_subnet_cidrs
