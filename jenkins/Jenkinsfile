@@ -1,14 +1,22 @@
+@Library('jenkins') _
+
 pipeline {
     agent any
 
     environment {
-        IMAGE_TAG = new Date().format('yyyy.MM.dd') + ".v${env.BUILD_NUMBER}"
         AWS_DEFAULT_REGION = credentials('AWS_REGION')
         ECR_REGISTRY = credentials('ECR_REGISTRY')
-        S3_STATE_BUCKET = credentials('S3_STATE_BUCKET')
     }
 
     stages {
+        stage('Init') {
+            steps {
+                script {
+                    env.IMAGE_TAG = generateImageTag()
+                }
+            }
+        }
+
         stage('Login to ECR') {
             steps {
                 withCredentials([[
@@ -16,46 +24,71 @@ pipeline {
                     credentialsId: 'aws-keys'
                 ]]) {
                     sh '''
-                        aws ecr get-login-password --region $AWS_DEFAULT_REGION \
-                        | docker login --username AWS --password-stdin $ECR_REGISTRY
+                        aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
+                          docker login --username AWS --password-stdin $ECR_REGISTRY
                     '''
                 }
             }
         }
 
-        stage('Terraform Infra') {
+        stage('Build & Push Go Service') {
             when {
-                changeset "infrastructure/terraform/**"
+                changeset "**/microservices/go-service/**"
             }
             steps {
-                deployTerraform("terraform", S3_STATE_BUCKET, AWS_DEFAULT_REGION)
+                dir('microservices/go-service') {
+                    script {
+                        def image = docker.build("${ECR_REGISTRY}/go-service:${env.IMAGE_TAG}")
+                        image.push()
+                    }
+                }
             }
         }
 
-        stage('Build & Push Services') {
-            parallel {
-                stage('Go Service') {
-                    when {
-                        changeset "microservices/go-service/**"
-                    }
-                    steps {
-                        buildMicroservice("go-service", "microservices/go-service", ECR_REGISTRY, IMAGE_TAG)
-                    }
-                }
-                stage('Python Service') {
-                    when {
-                        changeset "microservices/python-service/**"
-                    }
-                    steps {
-                        buildMicroservice("python-service", "microservices/python-service", ECR_REGISTRY, IMAGE_TAG)
+        stage('Build & Push Python Service') {
+            when {
+                changeset "**/microservices/python-service/**"
+            }
+            steps {
+                dir('microservices/python-service') {
+                    script {
+                        def image = docker.build("${ECR_REGISTRY}/python-service:${env.IMAGE_TAG}")
+                        image.push()
                     }
                 }
-                stage('Rails Service') {
-                    when {
-                        changeset "microservices/rail-service/**"
+            }
+        }
+
+        stage('Build & Push Rail Service') {
+            when {
+                changeset "**/microservices/rail-service/**"
+            }
+            steps {
+                dir('microservices/rail-service') {
+                    script {
+                        def image = docker.build("${ECR_REGISTRY}/rail-service:${env.IMAGE_TAG}")
+                        image.push()
                     }
-                    steps {
-                        buildMicroservice("rail-service", "microservices/rail-service", ECR_REGISTRY, IMAGE_TAG)
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                changeset "terraform/**"
+            }
+            steps {
+                dir('terraform') {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-keys'
+                    ]]) {
+                        sh '''
+                            terraform init
+                            terraform validate
+                            terraform plan -out=tfplan
+                            terraform apply -auto-approve tfplan
+                        '''
                     }
                 }
             }
