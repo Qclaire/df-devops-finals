@@ -14,7 +14,7 @@
         update_cache: yes
       when: ansible_os_family == 'RedHat'
       
-    - name: Install base packages
+    - name: Install base packages 
       yum:
         name: "{{ base_packages }}"
         state: present
