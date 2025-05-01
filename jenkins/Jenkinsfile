@@ -75,34 +75,38 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
-            steps {
-                script {
-                    deployToEKS(EKS_CLUSTER_NAME, 'go-service', env.IMAGE_TAG)
-                    deployToEKS(EKS_CLUSTER_NAME, 'python-service', env.IMAGE_TAG)
-                    deployToEKS(EKS_CLUSTER_NAME, 'rail-service', env.IMAGE_TAG)
-                }
-            }
-        }
-
-
         stage('Terraform Apply') {
-            // when {
-            //     changeset "**/infrastructure/terraform/**"
-            // }
+            when {
+                changeset "**/infrastructure/terraform/**"
+            }
             steps {
                 dir('infrastructure/terraform') {
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
                         credentialsId: 'aws-keys'
                     ]]) {
-                        sh '''
-                            terraform init
-                            terraform validate
-                            terraform plan -out=tfplan
-                            terraform apply -auto-approve tfplan
-                        '''
+                        script {
+                            def result = sh(script: '''
+                                terraform init
+                                terraform validate
+                                terraform plan -out=tfplan
+                                terraform apply -auto-approve tfplan
+                            ''',returnStatus: true)
+
+                            if (result != 0) {
+                                error("Terraform apply failed")
+                            }
+                        }
                     }
+                }
+            }
+
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    deployToEKS(EKS_CLUSTER_NAME, 'go-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'python-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'rail-service', env.IMAGE_TAG)
                 }
             }
         }
