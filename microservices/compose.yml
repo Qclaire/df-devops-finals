@@ -1,4 +1,4 @@
-version: "3.8"
+COMPOSE_BAKE=true
 
 services:
     python-service:
@@ -14,7 +14,7 @@ services:
             - "8080:8080"
 
     rails-service:
-        build: ./rails-service
-        container_name: rails-service
+        build: ./rail-service
+        container_name: rail-service
         ports:
             - "3000:3000"
