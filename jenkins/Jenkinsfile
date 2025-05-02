@@ -1,0 +1,149 @@
+@Library('shared-library') _
+
+pipeline {
+    agent any
+
+    environment {
+        AWS_DEFAULT_REGION = credentials('AWS_REGION')
+        ECR_REGISTRY = credentials('ECR_REGISTRY')
+        EKS_CLUSTER_NAME = credentials('EKS_CLUSTER_NAME')
+    }
+
+    stages {
+        stage('Init') {
+            steps {
+                script {
+                    
+                    env.IMAGE_TAG = generateImageTag()
+                }
+            }
+        }
+       
+        stage('Terraform Apply') {
+            when {
+                allOf {
+                    branch 'main'
+                    changeset "**/infrastructure/terraform/**" 
+                }
+            }
+            steps {
+                dir('infrastructure/terraform') {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-keys'
+                    ]]) {
+                        script {
+                            def result = sh(script: '''
+                                terraform init
+                                terraform validate
+                                terraform plan -out=tfplan
+                                terraform apply -auto-approve tfplan
+                            ''',returnStatus: true)
+
+                            if (result != 0) {
+                                error("Terraform apply failed")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    
+        stage('Login to ECR') {
+            when {
+                allOf {
+                    branch 'main'
+                    changeset "**/microservices/**"
+                }
+            }
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-keys'
+                ]]) {
+                    sh '''
+                        aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
+                          docker login --username AWS --password-stdin $ECR_REGISTRY
+                    '''
+                }
+            }
+        }
+
+        stage('Build & Push Go Service') {
+            when {
+                allOf {
+                    branch 'main'
+                    changeset "**/microservices/go-service/**"
+                }
+            }
+            steps {
+                dir('microservices/go-service') {
+                    script {
+                        def image = docker.build("${ECR_REGISTRY}/go-service:${env.IMAGE_TAG}")
+                        image.push()
+                    }
+                }
+            }
+        }
+
+        stage('Build & Push Python Service') {
+            when {
+                allOf {
+                    branch 'main'
+                    changeset "**/microservices/python-service/**"
+                }
+            }
+            steps {
+                dir('microservices/python-service') {
+                    script {
+                        def image = docker.build("${ECR_REGISTRY}/python-service:${env.IMAGE_TAG}")
+                        image.push()
+                    }
+                }
+            }
+        }
+
+        stage('Build & Push Rail Service') {
+            when {
+                allOf {
+                    branch 'main'
+                    changeset "**/microservices/rail-service/**"
+                }
+            }
+            steps {
+                dir('microservices/rail-service') {
+                    script {
+                        def image = docker.build("${ECR_REGISTRY}/rail-service:${env.IMAGE_TAG}")
+                        image.push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            when {
+                allOf {
+                    branch 'main'
+                    changeset "**/microservices/**"
+                }
+            }
+            steps {
+                script {
+                    deployToEKS(EKS_CLUSTER_NAME, 'go-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'python-service', env.IMAGE_TAG)
+                    deployToEKS(EKS_CLUSTER_NAME, 'rail-service', env.IMAGE_TAG)
+                }
+            }
+        }
+
+        
+
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+
+}    
