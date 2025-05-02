@@ -31,7 +31,7 @@ pipeline {
         }
         stage("Build Docker Compose images") {
             when {
-                allof {
+                allOf {
                     branch 'dev'
                 }
             }
@@ -48,7 +48,7 @@ pipeline {
 
         stage('Login to ECR') {
             when {
-                allof {
+                allOf {
                     branch 'main'
                     changeset "**/microservices/**"
                 }
@@ -68,7 +68,7 @@ pipeline {
 
         stage('Build & Push Go Service') {
             when {
-                allof {
+                allOf {
                     branch 'main'
                     changeset "**/microservices/go-service/**"
                 }
@@ -85,7 +85,7 @@ pipeline {
 
         stage('Build & Push Python Service') {
             when {
-                allof {
+                allOf {
                     branch 'main'
                     changeset "**/microservices/python-service/**"
                 }
@@ -102,7 +102,7 @@ pipeline {
 
         stage('Build & Push Rail Service') {
             when {
-                allof {
+                allOf {
                     branch 'main'
                     changeset "**/microservices/rail-service/**"
                 }
@@ -119,7 +119,7 @@ pipeline {
 
         stage('Terraform Apply') {
             when {
-                allof {
+                allOf {
                     branch 'main'
                     changeset "**/infrastructure/terraform/**" 
                 }
@@ -148,7 +148,7 @@ pipeline {
         }
         stage('Deploy to EKS') {
             when {
-                allof {
+                allOf {
                     branch 'main'
                     changeset "**/microservices/**"
                 }
