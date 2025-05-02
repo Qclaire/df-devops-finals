@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+    python-service:
+        build: ./python-service
+        container_name: python-service
+        ports:
+            - "8000:8000"
+
+    go-service:
+        build: ./go-service
+        container_name: go-service
+        ports:
+            - "8080:8080"
+
+    rails-service:
+        build: ./rails-service
+        container_name: rails-service
+        ports:
+            - "3000:3000"
