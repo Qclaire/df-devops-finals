@@ -19,7 +19,40 @@ pipeline {
             }
         }
 
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage("Build Docker Compose images") {
+            when {
+                allof {
+                    branch 'dev'
+                }
+            }
+            steps {
+                script {
+                    def composeFile = 'microservices/compose.yml'
+                    def composeCommand = "docker compose -f ${composeFile} build && docker compose -f ${composeFile} up -d"
+                    sh composeCommand
+                }
+            }
+        }
+
+
+
         stage('Login to ECR') {
+            when {
+                allof {
+                    branch 'main'
+                    changeset "**/microservices/**"
+                }
+            }
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
@@ -35,7 +68,10 @@ pipeline {
 
         stage('Build & Push Go Service') {
             when {
-                changeset "**/microservices/go-service/**"
+                allof {
+                    branch 'main'
+                    changeset "**/microservices/go-service/**"
+                }
             }
             steps {
                 dir('microservices/go-service') {
@@ -49,7 +85,10 @@ pipeline {
 
         stage('Build & Push Python Service') {
             when {
-                changeset "**/microservices/python-service/**"
+                allof {
+                    branch 'main'
+                    changeset "**/microservices/python-service/**"
+                }
             }
             steps {
                 dir('microservices/python-service') {
@@ -63,7 +102,10 @@ pipeline {
 
         stage('Build & Push Rail Service') {
             when {
-                changeset "**/microservices/rail-service/**"
+                allof {
+                    branch 'main'
+                    changeset "**/microservices/rail-service/**"
+                }
             }
             steps {
                 dir('microservices/rail-service') {
@@ -76,9 +118,12 @@ pipeline {
         }
 
         stage('Terraform Apply') {
-            // when {
-            //     changeset "**/infrastructure/terraform/**"
-            // }
+            when {
+                allof {
+                    branch 'main'
+                    changeset "**/infrastructure/terraform/**" 
+                }
+            }
             steps {
                 dir('infrastructure/terraform') {
                     withCredentials([[
@@ -102,6 +147,12 @@ pipeline {
             }
         }
         stage('Deploy to EKS') {
+            when {
+                allof {
+                    branch 'main'
+                    changeset "**/microservices/**"
+                }
+            }
             steps {
                 script {
                     deployToEKS(EKS_CLUSTER_NAME, 'go-service', env.IMAGE_TAG)
